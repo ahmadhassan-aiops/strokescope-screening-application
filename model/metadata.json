@@ -1,0 +1,85 @@
+{
+  "model": "Logistic regression",
+  "threshold": 0.047,
+  "high_threshold": 0.109,
+  "target_recall": 0.85,
+  "features": {
+    "numerical": [
+      "age",
+      "avg_glucose_level",
+      "bmi"
+    ],
+    "binary": [
+      "hypertension",
+      "heart_disease"
+    ],
+    "categorical": [
+      "gender",
+      "ever_married",
+      "work_type",
+      "Residence_type",
+      "smoking_status"
+    ]
+  },
+  "params": {
+    "C": 0.046689498537088946
+  },
+  "oof_auc_roc": 0.8409,
+  "test": {
+    "Recall": 0.84,
+    "Precision": 0.1197,
+    "Specificity": 0.6821,
+    "F1": 0.2095,
+    "F2": 0.3811,
+    "Accuracy": 0.6898,
+    "AUC-ROC": 0.839,
+    "PR-AUC": 0.259,
+    "Brier": 0.0412,
+    "Found": 42,
+    "Missed": 8,
+    "Flagged": 351,
+    "False alarms": 309
+  },
+  "test_high": {
+    "Recall": 0.68,
+    "Precision": 0.2313,
+    "Specificity": 0.8837,
+    "F1": 0.3452,
+    "F2": 0.4899,
+    "Accuracy": 0.8738,
+    "AUC-ROC": 0.839,
+    "PR-AUC": 0.259,
+    "Brier": 0.0412,
+    "Found": 34,
+    "Missed": 16,
+    "Flagged": 147,
+    "False alarms": 113
+  },
+  "test_rows": 1022,
+  "train_rows": 4087,
+  "stroke_rate": 0.0487,
+  "reference": {
+    "age": -2.0229583715154248e-16,
+    "avg_glucose_level": 2.4866605254266414e-16,
+    "bmi": 1.030019122491421e-16,
+    "hypertension": 0.09469048201614877,
+    "heart_disease": 0.05676535356006851,
+    "gender_Male": 0.41350623929532665,
+    "ever_married_Yes": 0.6598972351357965,
+    "work_type_Govt_job": 0.1291901149987766,
+    "work_type_Never_worked": 0.003914851969659897,
+    "work_type_Private": 0.5686322485931,
+    "work_type_Self-employed": 0.16246635674088575,
+    "work_type_children": 0.1357964276975777,
+    "Residence_type_Urban": 0.5025691216050893,
+    "smoking_status_Unknown": 0.30242231465622704,
+    "smoking_status_formerly smoked": 0.17494494739417665,
+    "smoking_status_never smoked": 0.37191093711769024,
+    "smoking_status_smokes": 0.15072180083190603
+  },
+  "versions": {
+    "scikit-learn": "1.8.0",
+    "pandas": "3.0.1",
+    "numpy": "2.4.2"
+  }
+}

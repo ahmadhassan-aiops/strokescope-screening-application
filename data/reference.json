@@ -1,0 +1,215 @@
+{
+  "test": {
+    "Recall": 0.84,
+    "Precision": 0.1197,
+    "Specificity": 0.6821,
+    "F1": 0.2095,
+    "F2": 0.3811,
+    "Accuracy": 0.6898,
+    "AUC-ROC": 0.839,
+    "PR-AUC": 0.259,
+    "Brier": 0.0412,
+    "Found": 42,
+    "Missed": 8,
+    "Flagged": 351,
+    "False alarms": 309
+  },
+  "oof": {
+    "Recall": 0.8643,
+    "Precision": 0.1245
+  },
+  "importance": {
+    "age": 1.0332,
+    "avg_glucose_level": 0.1577,
+    "hypertension": 0.0636,
+    "smoking_status": 0.0629,
+    "Residence_type": 0.0414,
+    "work_type": 0.0376,
+    "heart_disease": 0.0155,
+    "gender": 0.0148,
+    "ever_married": 0.0146,
+    "bmi": 0.003
+  },
+  "calibration": {
+    "predicted": [
+      0.0054,
+      0.0187,
+      0.0429,
+      0.0775,
+      0.1368,
+      0.2407
+    ],
+    "observed": [
+      0.0009,
+      0.0073,
+      0.0408,
+      0.0867,
+      0.1688,
+      0.2069
+    ],
+    "patients": [
+      1069.0,
+      1093.0,
+      785.0,
+      473.0,
+      551.0,
+      116.0
+    ]
+  },
+  "odds": [
+    {
+      "label": "Age (+10 years)",
+      "odds_ratio": 1.723,
+      "lo": 1.616,
+      "hi": 1.8415
+    },
+    {
+      "label": "Glucose (+50 mg/dl)",
+      "odds_ratio": 1.2558,
+      "lo": 1.0991,
+      "hi": 1.4119
+    },
+    {
+      "label": "BMI (+5)",
+      "odds_ratio": 0.9974,
+      "lo": 0.92,
+      "hi": 1.0879
+    },
+    {
+      "label": "Hypertension",
+      "odds_ratio": 1.4161,
+      "lo": 1.1562,
+      "hi": 1.7212
+    },
+    {
+      "label": "Heart disease",
+      "odds_ratio": 1.1771,
+      "lo": 0.9917,
+      "hi": 1.4528
+    },
+    {
+      "label": "Male (vs female)",
+      "odds_ratio": 1.0309,
+      "lo": 0.8739,
+      "hi": 1.2821
+    },
+    {
+      "label": "Ever married",
+      "odds_ratio": 0.9684,
+      "lo": 0.7986,
+      "hi": 1.1796
+    },
+    {
+      "label": "Urban (vs rural)",
+      "odds_ratio": 1.0865,
+      "lo": 0.8849,
+      "hi": 1.3508
+    },
+    {
+      "label": "Smokes (vs never)",
+      "odds_ratio": 1.1925,
+      "lo": 0.9097,
+      "hi": 1.5895
+    },
+    {
+      "label": "Former smoker (vs never)",
+      "odds_ratio": 1.1884,
+      "lo": 0.8842,
+      "hi": 1.5436
+    },
+    {
+      "label": "Smoking unknown (vs never)",
+      "odds_ratio": 1.0953,
+      "lo": 0.8386,
+      "hi": 1.4626
+    },
+    {
+      "label": "Self-employed (vs private)",
+      "odds_ratio": 0.9115,
+      "lo": 0.6982,
+      "hi": 1.2046
+    },
+    {
+      "label": "Government job (vs private)",
+      "odds_ratio": 0.9578,
+      "lo": 0.7258,
+      "hi": 1.2309
+    },
+    {
+      "label": "Child (vs private)",
+      "odds_ratio": 0.9118,
+      "lo": 0.7784,
+      "hi": 1.0908
+    },
+    {
+      "label": "Never worked (vs private)",
+      "odds_ratio": 0.9397,
+      "lo": 0.8188,
+      "hi": 1.0884
+    }
+  ],
+  "tuned": [
+    {
+      "Model": "XGBoost",
+      "AUC-ROC": 0.8407,
+      "Std": 0.018,
+      "Precision at 85% recall": 0.128,
+      "File (KB)": 319
+    },
+    {
+      "Model": "Logistic regression (deployed)",
+      "AUC-ROC": 0.8401,
+      "Std": 0.0175,
+      "Precision at 85% recall": 0.125,
+      "File (KB)": 116
+    },
+    {
+      "Model": "Random forest",
+      "AUC-ROC": 0.8388,
+      "Std": 0.0192,
+      "Precision at 85% recall": 0.126,
+      "File (KB)": 944
+    }
+  ],
+  "balancing": [
+    {
+      "Approach": "None (threshold moving)",
+      "AUC-ROC": 0.841,
+      "Precision at 85% recall": 0.126,
+      "Brier": 0.043
+    },
+    {
+      "Approach": "Class weights",
+      "AUC-ROC": 0.84,
+      "Precision at 85% recall": 0.125,
+      "Brier": 0.173
+    },
+    {
+      "Approach": "SMOTE",
+      "AUC-ROC": 0.837,
+      "Precision at 85% recall": 0.124,
+      "Brier": 0.173
+    },
+    {
+      "Approach": "Undersampling",
+      "AUC-ROC": 0.834,
+      "Precision at 85% recall": 0.127,
+      "Brier": 0.176
+    }
+  ],
+  "first": {
+    "Recall": 0.18,
+    "Precision": 0.237,
+    "Found": 9,
+    "Flagged": 38,
+    "AUC-ROC": 0.801,
+    "Accuracy": 0.932,
+    "F1": 0.205,
+    "Mean prediction": 0.079,
+    "Brier": 0.055,
+    "Leaky CV accuracy": 0.959,
+    "Leaky CV recall": 0.959,
+    "Honest CV accuracy": 0.929,
+    "Honest CV recall": 0.092
+  }
+}
