@@ -19,8 +19,7 @@ calibrated, and every score splits exactly into one odds multiplier per factor.
   the line misses.
 - **Risk factors**: stroke rate by age with each condition, conditions and measurements, lifestyle and background,
   and a forest plot of what the model weighs once age is accounted for.
-- **Model report**: the six mistakes in the first version and what changed, the comparison on the same patients,
-  ROC, calibration, the model search, data and limits.
+- **Model report**: how the model works, held-out results at both lines, ROC, calibration, the model search, data and limits.
 
 ## Why this stack
 

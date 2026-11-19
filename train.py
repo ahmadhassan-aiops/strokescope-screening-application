@@ -48,11 +48,6 @@ BALANCING = [
     {"Approach": "SMOTE", "AUC-ROC": 0.837, "Precision at 85% recall": 0.124, "Brier": 0.173},
     {"Approach": "Undersampling", "AUC-ROC": 0.834, "Precision at 85% recall": 0.127, "Brier": 0.176},
 ]
-FIRST = {  # the first version's approach re-created on the same split (notebook section 7.1)
-    "Recall": 0.18, "Precision": 0.237, "Found": 9, "Flagged": 38, "AUC-ROC": 0.801, "Accuracy": 0.932,
-    "F1": 0.205, "Mean prediction": 0.079, "Brier": 0.055,
-    "Leaky CV accuracy": 0.959, "Leaky CV recall": 0.959, "Honest CV accuracy": 0.929, "Honest CV recall": 0.092,
-}
 
 
 def build() -> Pipeline:
@@ -166,7 +161,7 @@ def main(csv: Path) -> None:
         "importance": {k: round(float(v), 4) for k, v in contrib.abs().mean().sort_values(ascending=False).items()},
         "calibration": {k: [round(float(v), 4) for v in calib[k]] for k in calib.columns},
         "odds": odds,
-        "tuned": TUNED, "balancing": BALANCING, "first": FIRST,
+        "tuned": TUNED, "balancing": BALANCING,
     }
     (ROOT / "data" / "reference.json").write_text(json.dumps(ref, indent=2), encoding="utf-8")
     print(json.dumps({k: v for k, v in meta.items() if k != "reference"}, indent=2))

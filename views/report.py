@@ -1,5 +1,5 @@
-"""Model report: what was wrong in the first version, the comparison on the same patients, ranking, calibration, the
-model search, data and limits."""
+"""Model report: how the model works, held-out results at both lines, ranking, calibration, the model search, data
+and limits."""
 
 from __future__ import annotations
 
@@ -15,47 +15,41 @@ def render() -> None:
     m = data.model()
     ref = data.reference()
     df = data.clinic()
-    s, first = m.meta["test"], ref["first"]
+    s, h = m.meta["test"], m.meta["test_high"]
     ui.page("Model report", "How StrokeScope was built and checked",
             "Every figure on this page comes from the 1,022 held-out patients (50 of them stroke patients), scored once after "
             "every choice had been made in cross-validation.")
-    ui.stats([("Stroke patients found", f"{s['Found']} of {s['Found'] + s['Missed']}", f"recall {s['Recall']:.0%} (first version 18%)"),
+    ui.stats([("Stroke patients found", f"{s['Found']} of {s['Found'] + s['Missed']}", f"recall {s['Recall']:.0%} at the screening line"),
               ("Flags that are right", f"{s['Precision']:.0%}", f"precision; {m.meta['stroke_rate']:.1%} by chance"),
               ("Ranking quality", f"{s['AUC-ROC']:.3f}", "AUC-ROC (0.5 = random)"),
-              ("Calibration", f"{s['Brier']:.3f}", "Brier score (first version 0.055)")])
+              ("Calibration", f"{s['Brier']:.3f}", "Brier score (lower is better)")])
 
-    with ui.panel("A", "What was wrong in the first version", "and what changed"):
+    with ui.panel("A", "How the model works", "one pipeline from patient record to risk"):
         a, b = st.columns(2, gap="large")
         with a:
-            ui.note("<b>1. 40 stroke patients were thrown away.</b> Rows with no BMI were dropped, but 20% of those patients had "
-                    "had a stroke (4% of the others): 16% of all stroke cases. Now kept; BMI is estimated from similar patients "
-                    "inside the pipeline.",
-                    f"<b>2. SMOTE ran before cross-validation.</b> Synthetic copies leaked into the scored folds, so the model "
-                    f"looked {first['Leaky CV accuracy']:.0%} accurate with {first['Leaky CV recall']:.0%} recall. Scored on "
-                    f"real patients only, the same model found {first['Honest CV recall']:.0%} of stroke patients.",
-                    "<b>3. Label encoding, then SMOTE,</b> invented categories that do not exist (a work type of 2.96, a "
-                    "smoking status of 0.32). Now one-hot encoded, and resampling was tested only inside folds.")
+            ui.note("<b>Every patient is used.</b> 201 patients have no BMI, and 20% of them had a stroke (4% of the others), so "
+                    "they are kept: the pipeline estimates BMI from the 10 most similar patients.",
+                    "<b>Inputs:</b> age, glucose and BMI are scaled; hypertension and heart disease are yes/no; sex, marital "
+                    "status, work type, residence and smoking are one-hot encoded.",
+                    "<b>Model:</b> a tuned logistic regression trained on the real 4.9% stroke rate, so its risks read as real "
+                    "chances. Each score is the average patient's odds times one multiplier per factor.")
         with b:
-            ui.note("<b>4. Accuracy was the metric.</b> Saying \"no stroke\" to everyone is 95% accurate. Models are now compared "
-                    "on ranking (AUC-ROC, PR-AUC) and on precision at 85% recall.",
-                    "<b>5. The tuned settings were not used, and the line stayed at 0.5,</b> which almost no real patient "
-                    "reaches. The line is now chosen out of fold to find 85% of stroke patients.",
-                    "<b>6. The row order.</b> All 249 stroke patients are the first rows of the file. An unshuffled split puts "
-                    "none of them in the test set. The first version's split did shuffle, so this was not its problem, but "
-                    "every split here is shuffled and stratified.")
+            ui.note("<b>Measured on what matters.</b> Answering \"no stroke\" for everyone is 95% accurate and finds no one, "
+                    "so models are compared on ranking (AUC-ROC, PR-AUC) and on precision at 85% recall, not accuracy.",
+                    "<b>Two lines, chosen out of fold.</b> Check finds 85% of stroke patients in cross-validation; Priority "
+                    "is the best balance of precision and recall (F1).",
+                    "<b>Split:</b> shuffled and stratified, because the source file lists all 249 stroke patients first. The "
+                    "held-out patients were scored once, after every choice was made.")
 
-    with ui.panel("B", "Against the first version", "same 1,022 held-out patients"):
-        st.dataframe(pd.DataFrame({
-            "First version (SMOTE + XGBoost, line 0.5)": [f"{first['Found']} of 50", f"{first['Recall']:.0%}", f"{first['Precision']:.0%}",
-                                                          f"{first['Flagged']}", f"{first['AUC-ROC']:.3f}", f"{first['Accuracy']:.1%}",
-                                                          f"{first['Mean prediction']:.1%}", f"{first['Brier']:.3f}"],
-            f"StrokeScope (logistic regression, line {m.threshold:.1%})": [
-                f"{s['Found']} of 50", f"{s['Recall']:.0%}", f"{s['Precision']:.0%}", f"{s['Flagged']}", f"{s['AUC-ROC']:.3f}",
-                f"{s['Accuracy']:.1%}", f"{df['proba'].mean():.1%}", f"{s['Brier']:.3f}"],
-        }, index=["Stroke patients found", "Recall", "Precision", "Patients flagged", "AUC-ROC", "Accuracy",
-                  "Average predicted risk (actual 4.9%)", "Brier score (lower is better)"]), width="stretch")
-        ui.note("StrokeScope finds 33 more stroke patients. Its accuracy is lower on purpose: accuracy rewards ignoring stroke "
-                "patients, and the first version's 93% was below the 95% of answering \"no stroke\" for everyone.")
+    with ui.panel("B", "Held-out results at each line", "1,022 patients, 50 of them stroke patients"):
+        rows = ["Stroke patients found", "Recall", "Precision", "Patients flagged", "False alarms", "F1"]
+        def col(r):
+            return [f"{r['Found']} of 50", f"{r['Recall']:.0%}", f"{r['Precision']:.0%}", f"{r['Flagged']}",
+                    f"{r['False alarms']}", f"{r['F1']:.3f}"]
+        st.dataframe(pd.DataFrame({f"Check line ({m.threshold:.1%})": col(s), f"Priority line ({m.high:.1%})": col(h)},
+                                  index=rows), width="stretch")
+        ui.note(f"Across all patients: AUC-ROC {s['AUC-ROC']:.3f}, PR-AUC {s['PR-AUC']:.3f} (random scores would give "
+                f"{m.meta['stroke_rate']:.3f}), average predicted risk {df['proba'].mean():.1%} against an actual 4.9%.")
 
     a, b = st.columns(2, gap="medium")
     with a:
@@ -108,8 +102,7 @@ def render() -> None:
                        "tested on another hospital's patients. It is a portfolio demonstration, not a medical device.")
 
     with ui.panel("G", "Code and notebook"):
-        st.markdown(f"- [Notebook]({NOTEBOOK_URL}): data checks, EDA, the first version's mistakes reproduced, model "
-                    "search, thresholds, test results\n"
+        st.markdown(f"- [Notebook]({NOTEBOOK_URL}): data checks, EDA, model search, thresholds, test results\n"
                     f"- [Project folder]({PROJECT_URL}) in the portfolio repository\n"
                     f"- [App code]({CODE_URL}): Streamlit app, `strokescope/` inference package, `train.py`, tests")
     ui.footer()

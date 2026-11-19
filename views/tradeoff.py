@@ -24,7 +24,6 @@ def _curve(y: np.ndarray, p: np.ndarray) -> pd.DataFrame:
 
 def render() -> None:
     m = data.model()
-    ref = data.reference()
     df = data.clinic()
     y, p = df["stroke"].to_numpy(), df["proba"].to_numpy()
     ui.page("Misses and false alarms", "What the screening line costs, and what it saves",
@@ -50,7 +49,6 @@ def render() -> None:
                 f"The deployed screening line ({m.threshold:.1%}) was chosen before the test set was opened, as the line that "
                 "finds 85% of stroke patients in cross-validation.")
 
-    first = ref["first"]
     test, high = m.meta["test"], m.meta["test_high"]
     points = [
         {"label": "Screening line (deployed)", "flagged": test["Flagged"] / len(y), "missed": 1 - test["Recall"],
@@ -59,16 +57,14 @@ def render() -> None:
          "colour": t.TIER["Priority"], "pos": "middle right"},
         {"label": "Default 0.5: finds nobody", "flagged": float((p >= 0.5).mean()), "missed": 1 - float((p[y == 1] >= 0.5).mean()),
          "colour": t.INK, "pos": "bottom right", "symbol": "x"},
-        {"label": "First version of the model", "flagged": first["Flagged"] / len(y), "missed": 1 - first["Recall"],
-         "colour": t.FAINT, "pos": "top right", "symbol": "diamond"},
     ]
     a, b = st.columns([1.25, 1], gap="medium")
     with a:
         with ui.panel("B", "Every possible line", "fewer misses always means more patients flagged"):
             charts.show(charts.tradeoff(_curve(y, p), points, line), "tradeoff")
             ui.note("Each point on the curve is one possible line. Down means fewer missed strokes, left means fewer patients "
-                    f"checked. The first version flagged {first['Flagged']} patients and missed "
-                    f"{50 - first['Found']} of 50 stroke patients; the deployed line misses {test['Missed']}.")
+                    f"checked. The deployed screening line flags {test['Flagged']} patients and misses {test['Missed']} of 50 "
+                    "stroke patients.")
     with b:
         with ui.panel("C", "Why precision and recall cannot both be high", "the limit is in the data"):
             ui.note("Age carries most of the signal, and many older patients without a stroke look, in these 10 fields, "
