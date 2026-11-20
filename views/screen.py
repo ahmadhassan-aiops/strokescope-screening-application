@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from clinic import data, fmt, ui
 from clinic import theme as t
 from strokescope.schema import (
-    BACKGROUND, FEATURES, FIXED, LABELS, MODIFIABLE, SHORT, SMOKING, SMOKING_LABELS, WORK_LABELS, WORK_TYPES, Patient,
+    BACKGROUND, FEATURES, FIXED, LABELS, SHORT, SMOKING, SMOKING_LABELS, WORK_LABELS, WORK_TYPES, Patient,
 )
 
 NEW = dict(gender="Male", age=67.0, hypertension=1, heart_disease=0, ever_married="Yes", work_type="Private",
@@ -34,18 +34,18 @@ def _intake() -> pd.DataFrame | None:
     a, b = st.columns(2)
     sex = a.segmented_control("Sex", ["Female", "Male"], default=NEW["gender"], key="in_sex", required=True)
     age = b.number_input("Age (years)", 0.1, 100.0, NEW["age"], step=1.0, format="%.0f", key="in_age")
-    st.caption("Conditions already diagnosed")
+    st.html('<p class="fgroup-t">Conditions already diagnosed</p>')
     a, b = st.columns(2)
     hyp = a.toggle("Hypertension", bool(NEW["hypertension"]), key="in_hyp")
     heart = b.toggle("Heart disease", bool(NEW["heart_disease"]), key="in_heart")
-    st.caption("Measurements")
+    st.html('<p class="fgroup-t">Measurements</p>')
     a, b = st.columns(2)
     glucose = a.number_input("Average glucose (mg/dl)", 40.0, 400.0, NEW["avg_glucose_level"], step=5.0, format="%.0f",
                              key="in_glu")
     bmi_known = b.toggle("BMI recorded", True, key="in_bmi_known")
     bmi = b.number_input("BMI", 10.0, 100.0, NEW["bmi"], step=0.5, format="%.1f", key="in_bmi", disabled=not bmi_known,
                          label_visibility="collapsed")
-    st.caption("Lifestyle and background")
+    st.html('<p class="fgroup-t">Lifestyle and background</p>')
     smoking = st.selectbox("Smoking", SMOKING, index=SMOKING.index(NEW["smoking_status"]),
                            format_func=SMOKING_LABELS.get, key="in_smoke")
     a, b = st.columns(2)
@@ -72,6 +72,32 @@ def _from_list() -> tuple[pd.DataFrame, pd.Series]:
     record = clinic.loc[clinic["patient_id"] == choice].iloc[0]
     ui.sheet([(LABELS[f], fmt.value(f, record[f])) for f in FEATURES])
     return pd.DataFrame([record[FEATURES].to_dict()]).astype({"age": float, "avg_glucose_level": float, "bmi": float}), record
+
+
+def _row(f: str, patient: pd.Series, mult: pd.Series) -> dict:
+    """One results-table row: the value, a lab-style flag and the reference interval where one exists."""
+    v = patient[f]
+    flag, ref = "", ""
+    if f == "avg_glucose_level":
+        ref = "70 to 116 mg/dl"
+        flag = "H" if v >= 117 else "L" if v < 70 else ""
+    elif f == "bmi":
+        ref = "18.5 to 24.9"
+        if not pd.isna(v):
+            flag = "H" if v >= 25 else "L" if v < 18.5 else ""
+    elif f in ("hypertension", "heart_disease"):
+        ref = "Negative"
+        flag = "+" if int(v) == 1 else ""
+    elif f == "smoking_status":
+        ref = "Never smoked"
+        flag = "+" if v == "smokes" else ""
+    result = fmt.value(f, v)
+    if f in ("hypertension", "heart_disease"):
+        result = "Positive" if int(v) == 1 else "Negative"
+    if f == "bmi" and pd.isna(v):
+        result = "not recorded (estimated)"
+    return {"test": LABELS[f] if f != "avg_glucose_level" else "Average glucose", "result": result, "flag": flag, "ref": ref,
+            "mult": float(mult[f])}
 
 
 def _report(patient: pd.Series, p: float, tier: str, rows: list[dict]) -> str:
@@ -116,7 +142,9 @@ def render() -> None:
             times = p / stroke_rate
             ui.verdict(p, tier, f"Among patients with a profile like this, about <b>{p * 1000:.0f} in 1,000</b> had had a "
                                 f"stroke: {times:.1f} times the average patient ({stroke_rate:.1%}). "
-                                f"{t.TIER_TEXT[tier]}")
+                                f"{t.TIER_TEXT[tier]}",
+                       f"All patients <b>{stroke_rate:.1%}</b><br>Age {band}: <b>{rates[band]:.1%}</b><br>"
+                       f"Check from <b>{m.threshold:.1%}</b> · Priority from <b>{m.high:.1%}</b>")
             ui.ruler(p, m.threshold, m.high, [(stroke_rate, f"All patients {stroke_rate:.1%}"),
                                               (float(rates[band]), f"Age {band}: {rates[band]:.1%}")])
             if record is not None:
@@ -125,16 +153,19 @@ def render() -> None:
 
     contrib = m.explain(row).iloc[0]
     mult = np.exp(contrib)
-    with ui.panel("C", "Why this score", "each factor multiplies the odds, compared with the average patient"):
-        card = lambda fs: [(SHORT[f], fmt.value(f, patient[f]), float(mult[f])) for f in fs]  # noqa: E731
-        ui.factor_groups([("Treatable or changeable", card(MODIFIABLE)), ("Cannot be changed", card(FIXED)),
-                          ("Background", card(BACKGROUND))])
+    with ui.panel("C", "Results and what they do to the risk",
+                  "each finding with its flag and reference interval, and the factor by which the model multiplies the "
+                  "odds compared with the average patient"):
+        ui.results([("Measurements", [_row(f, patient, mult) for f in ("avg_glucose_level", "bmi")]),
+                    ("History", [_row(f, patient, mult) for f in ("hypertension", "heart_disease", "smoking_status")]),
+                    ("Demographics", [_row(f, patient, mult) for f in FIXED]),
+                    ("Background", [_row(f, patient, mult) for f in BACKGROUND])])
         top = mult.drop(FIXED).sort_values(ascending=False)
         lead = ", ".join(f"{SHORT[f].lower()} (× {v:.2f})" for f, v in top.items() if v >= 1.05) or "none of them"
         ui.note(f"<b>Age</b> multiplies this patient's odds by {mult['age']:.2f}. Among the factors that can be treated or "
                 f"changed, the ones raising the risk are: {lead}.",
                 "Odds multipliers come straight from the logistic regression: the average patient's odds times every "
-                "multiplier give this patient's odds exactly. Grey cards barely move the score.")
+                "multiplier give this patient's odds exactly. Rows in grey barely move the score.")
 
     a, b = st.columns(2, gap="medium")
     rows = m.what_if(row)
@@ -152,8 +183,9 @@ def render() -> None:
         with ui.panel("E", "Next step", NEXT[tier][0]):
             st.html(f'<div style="margin:-.2rem 0 .7rem">{ui.tier_badge(tier)}</div>'
                     f'<p style="margin:0 0 .8rem;line-height:1.6">{NEXT[tier][1]}</p>')
-            st.html('<p style="font-weight:600;margin:0 0 .4rem">Whatever the score, call emergency services at once for:</p>')
             ui.fast()
             st.download_button("Download the screening summary", _report(patient, p, tier, rows), "strokescope-summary.txt",
                                icon=":material/download:", key="dl_summary")
+    ui.signature(f"Calculated by the StrokeScope logistic regression (trained on {m.meta['train_rows']:,} patients). Glucose "
+                 "reference: an average below 117 mg/dl matches an HbA1c below 5.7%. A screening aid; not reviewed by a clinician.")
     ui.footer()

@@ -36,7 +36,7 @@ def render() -> None:
         charts.show(charts.age_lines(table, {0: f"No {split.lower()}" if split != "Glucose above 140" else "Glucose 140 or less",
                                              1: split if split != "Glucose above 140" else "Glucose above 140"}), "age")
         ui.note("The stroke rate climbs from almost zero under 30 to <b>17.7% from age 70</b>; 92% of stroke patients are 50 or "
-                "older. Within each age band the red line stays above the blue one for most bands: the condition adds risk "
+                "older. Within each age band the red line stays above the grey one for most bands: the condition adds risk "
                 "on top of age (small bands under 40 are noisy).")
 
     with ui.panel("B", "Conditions and measurements", "share who had a stroke in each group"):

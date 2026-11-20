@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="220" height="44" viewBox="0 0 220 44">
-  <rect x="2" y="4" width="36" height="36" rx="9" fill="#4f46e5"/>
+  <rect x="2" y="4" width="36" height="36" rx="9" fill="#7b2343"/>
   <path d="M7 23h7l3-8 5 15 4-11 2 4h5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="48" y="29" font-family="Georgia, 'Source Serif 4', serif" font-size="21" font-weight="700" fill="#1b2140">Stroke<tspan fill="#4f46e5">Scope</tspan></text>
+  <text x="48" y="29" font-family="Georgia, 'Source Serif 4', serif" font-size="21" font-weight="700" fill="#1b2140">Stroke<tspan fill="#7b2343">Scope</tspan></text>
 </svg>

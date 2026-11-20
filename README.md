@@ -8,8 +8,12 @@ trained on 4,087 patients and tested once on 1,022 it never saw, **finds 42 of t
 at its screening line, against 9 of 50 for the first version of the model on the same patients. Its risks are
 calibrated, and every score splits exactly into one odds multiplier per factor.
 
+The app reads like a **hospital laboratory report**: a maroon letterhead on every page, report sections with heavy
+rules, monospaced results with H/L flags and reference intervals, and the model's effect on the odds beside each
+finding.
+
 - **Screen a patient**: an intake form (or a held-out patient), the risk on a Routine / Check / Priority ruler next
-  to the average patient and the patient's age group, **why** as odds-multiplier cards (treatable, fixed, background),
+  to the average patient and the patient's age group, **why** as a results table (each finding with its flag, reference interval and odds multiplier),
   what controlling hypertension or glucose would change, the next step, the FAST stroke warning signs and a
   downloadable summary.
 - **Clinic list**: a triage board that sorts a list into three lanes, what each lane holds, and the full ranked list
@@ -40,7 +44,8 @@ app.py              entry point (top navigation, logo)
 nav.py              page registry
 views/              screen, clinic_list, tradeoff, risk_factors, report
 strokescope/        schema.py (pydantic), model.py (risk, tiers, explanations, what-ifs, odds ratios)
-clinic/             clinical-report UI kit (lettered panels, risk ruler, factor cards, triage lanes), Plotly charts, theme
+clinic/             laboratory-report UI kit (letterhead, report sections, results table with flags and reference
+                    intervals, risk ruler, critical-alert box, worklist lanes), Plotly charts, theme
 model/              stroke_risk_logreg.joblib + metadata.json
 data/               held-out patients with outcome and score, all patients, reference statistics
 train.py            rebuilds model/ and data/ from the CSV

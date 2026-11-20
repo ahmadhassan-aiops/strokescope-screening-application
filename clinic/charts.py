@@ -1,5 +1,5 @@
-"""Plotly charts on white panels: indigo for the model and the patient, red for strokes / raises the risk, teal for
-found / lowers the risk. Thin marks, recessive grids, figures in IBM Plex Mono, hover on every mark."""
+"""Plotly charts on white report sheets: maroon for the model and the patient, red for strokes / raises the risk, teal
+for found / lowers the risk. Thin marks, recessive grids, system fonts (measured correctly at first draw), hover on every mark."""
 
 from __future__ import annotations
 
@@ -9,6 +9,9 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from clinic import theme as t
+
+SANS = "Segoe UI, Helvetica Neue, Arial, sans-serif"  # system fonts: measured correctly at first draw
+MONO = "Consolas, Menlo, monospace"
 
 CONFIG = {"displayModeBar": False, "scrollZoom": False}
 
@@ -20,12 +23,12 @@ def show(fig: go.Figure, key: str) -> None:
 def style(fig: go.Figure, height: int = 340, legend: bool = False) -> go.Figure:
     fig.update_layout(
         height=height, paper_bgcolor=t.PANEL, plot_bgcolor=t.PANEL, showlegend=legend,
-        font=dict(family=t.SANS, size=13, color=t.MUTED), margin=dict(l=10, r=20, t=24, b=10),
+        font=dict(family=SANS, size=13, color=t.MUTED), margin=dict(l=10, r=20, t=24, b=10),
         legend=dict(orientation="h", y=1.02, yanchor="bottom", x=0, font=dict(color=t.MUTED)),
-        hoverlabel=dict(bgcolor="#ffffff", bordercolor=t.LINE, font=dict(family=t.MONO, color=t.INK, size=12)),
+        hoverlabel=dict(bgcolor="#ffffff", bordercolor=t.LINE, font=dict(family=MONO, color=t.INK, size=12)),
     )
     axis = dict(automargin=True, gridcolor="#eceff4", zeroline=False, linecolor=t.LINE,
-                tickfont=dict(family=t.MONO, color=t.FAINT, size=11), title_font=dict(color=t.MUTED, size=12))
+                tickfont=dict(family=MONO, color=t.FAINT, size=11), title_font=dict(color=t.MUTED, size=12))
     fig.update_xaxes(**axis, showgrid=False)
     fig.update_yaxes(**axis)
     return fig
@@ -76,7 +79,7 @@ def score_strip(df: pd.DataFrame, threshold: float, high: float) -> go.Figure:
 def age_lines(table: pd.DataFrame, by_label: dict[int, str]) -> go.Figure:
     """Stroke rate by age band, one line per group (table: index = band, columns = group values)."""
     fig = go.Figure()
-    colours = [t.BRAND, t.RAISES]
+    colours = ["#5b6b8c", t.RAISES]  # slate for "without the condition", red for "with it"
     for (val, label), c in zip(by_label.items(), colours):
         if val not in table.columns:
             continue
@@ -93,7 +96,7 @@ def rate_bars(labels: list[str], rates: list[float], counts: list[int], overall:
     highlight = highlight or [False] * len(labels)
     fig = go.Figure(go.Bar(
         x=rates, y=labels, orientation="h", marker=dict(color=[t.RAISES if h else "#9aa3b5" for h in highlight], cornerradius=4),
-        text=[f"{r:.1%}" for r in rates], textposition="outside", textfont=dict(family=t.MONO, color=t.INK, size=12),
+        text=[f"{r:.1%}" for r in rates], textposition="outside", textfont=dict(family=MONO, color=t.INK, size=12),
         customdata=np.array(counts)[:, None], hovertemplate="%{y}<br>%{x:.1%} of %{customdata[0]:,} patients<extra></extra>"))
     fig.add_vline(x=overall, line=dict(color=t.BRAND, width=1.5, dash="dot"))
     fig.add_annotation(x=overall, y=1.0, yref="paper", text=f"All patients {overall:.1%}", showarrow=False,
@@ -140,7 +143,7 @@ def roc(fpr: np.ndarray, tpr: np.ndarray, auc: float, point: tuple[float, float]
                              hovertemplate="False alarm rate %{x:.0%}<br>Strokes found %{y:.0%}<extra></extra>"))
     fig.add_trace(go.Scatter(x=[point[0]], y=[point[1]], mode="markers+text", text=["Screening line"], textposition="bottom right",
                              marker=dict(size=11, color=t.TIER["Check"], line=dict(color="#fff", width=2)), hoverinfo="skip"))
-    fig.add_annotation(x=0.98, y=0.06, text=f"AUC-ROC {auc:.3f}", showarrow=False, xanchor="right", font=dict(family=t.MONO, color=t.INK))
+    fig.add_annotation(x=0.98, y=0.06, text=f"AUC-ROC {auc:.3f}", showarrow=False, xanchor="right", font=dict(family=MONO, color=t.INK))
     fig.update_xaxes(title="Share of non-stroke patients flagged", tickformat=".0%", range=[0, 1])
     fig.update_yaxes(title="Share of stroke patients found", tickformat=".0%", range=[0, 1.02])
     return style(fig, 330)
