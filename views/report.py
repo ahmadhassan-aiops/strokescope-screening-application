@@ -43,11 +43,13 @@ def render() -> None:
 
     with ui.panel("B", "Held-out results at each line", "1,022 patients, 50 of them stroke patients"):
         rows = ["Stroke patients found", "Recall", "Precision", "Patients flagged", "False alarms", "F1"]
+
         def col(r):
-            return [f"{r['Found']} of 50", f"{r['Recall']:.0%}", f"{r['Precision']:.0%}", f"{r['Flagged']}",
-                    f"{r['False alarms']}", f"{r['F1']:.3f}"]
-        st.dataframe(pd.DataFrame({f"Check line ({m.threshold:.1%})": col(s), f"Priority line ({m.high:.1%})": col(h)},
-                                  index=rows), width="stretch")
+            return [f"{r['Found']} of 50", f"{r['Recall']:.0%}", f"{r['Precision']:.0%}", f"{r['Flagged']:,}",
+                    f"{r['False alarms']:,}", f"{r['F1']:.3f}"]
+        ui.table(pd.DataFrame({"Measure": rows, f"Check line ({m.threshold:.1%})": col(s),
+                               f"Priority line ({m.high:.1%})": col(h)}),
+                 formats={f"Check line ({m.threshold:.1%})": "", f"Priority line ({m.high:.1%})": ""})
         ui.note(f"Across all patients: AUC-ROC {s['AUC-ROC']:.3f}, PR-AUC {s['PR-AUC']:.3f} (random scores would give "
                 f"{m.meta['stroke_rate']:.3f}), average predicted risk {df['proba'].mean():.1%} against an actual 4.9%.")
 
@@ -68,19 +70,15 @@ def render() -> None:
                     "trained on the real 4.9% rate, not on resampled data, so its risks are not inflated.")
 
     with ui.panel("E", "Model search", "cross-validation on the 4,087 training patients"):
-        a, b = st.columns(2, gap="large")
+        a = b = st.container()
         with a:
-            st.caption("Three tuned models (40 settings each, 5-fold cross-validation repeated 3 times)")
-            st.dataframe(pd.DataFrame(ref["tuned"]), hide_index=True, width="stretch",
-                         column_config={"AUC-ROC": st.column_config.NumberColumn(format="%.4f"),
-                                        "Std": st.column_config.NumberColumn("Fold std", format="%.3f"),
-                                        "Precision at 85% recall": st.column_config.NumberColumn(format="%.3f")})
+            st.html('<p class="fgroup-t">Three tuned models (40 settings each, 5-fold CV repeated 3 times)</p>')
+            ui.table(pd.DataFrame(ref["tuned"]).rename(columns={"Std": "Fold std", "Precision at 85% recall": "Precision at 85% recall"}),
+                     formats={"AUC-ROC": ".4f", "Fold std": ".3f", "Precision at 85% recall": ".3f"})
         with b:
-            st.caption("Handling the 4.9% stroke rate (logistic regression)")
-            st.dataframe(pd.DataFrame(ref["balancing"]), hide_index=True, width="stretch",
-                         column_config={"AUC-ROC": st.column_config.NumberColumn(format="%.3f"),
-                                        "Precision at 85% recall": st.column_config.NumberColumn(format="%.3f"),
-                                        "Brier": st.column_config.NumberColumn(format="%.3f")})
+            st.html('<p class="fgroup-t">Handling the 4.9% stroke rate (logistic regression)</p>')
+            ui.table(pd.DataFrame(ref["balancing"]), formats={"AUC-ROC": ".3f", "Precision at 85% recall": ".3f", "Brier": ".3f"},
+                     mark="threshold moving")
         ui.note("The three tuned models tie: their gaps are a tenth of the fold-to-fold variation. Logistic regression was "
                 "chosen because its risks are calibrated and each patient's score splits exactly into one multiplier per "
                 "factor, which the patient screen shows.",

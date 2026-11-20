@@ -33,7 +33,7 @@ def test_screen_from_list_and_without_bmi():
     at.segmented_control(key="screen_mode").set_value("From the clinic list").run()
     assert not at.exception
     at.segmented_control(key="screen_mode").set_value("New patient").run()
-    at.toggle(key="in_bmi_known").set_value(False).run()
+    at.checkbox(key="in_bmi_missing").check().run()
     assert not at.exception
 
 

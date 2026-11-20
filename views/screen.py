@@ -42,9 +42,10 @@ def _intake() -> pd.DataFrame | None:
     a, b = st.columns(2)
     glucose = a.number_input("Average glucose (mg/dl)", 40.0, 400.0, NEW["avg_glucose_level"], step=5.0, format="%.0f",
                              key="in_glu")
-    bmi_known = b.toggle("BMI recorded", True, key="in_bmi_known")
-    bmi = b.number_input("BMI", 10.0, 100.0, NEW["bmi"], step=0.5, format="%.1f", key="in_bmi", disabled=not bmi_known,
-                         label_visibility="collapsed")
+    bmi_missing = st.session_state.get("in_bmi_missing", False)
+    bmi = b.number_input("BMI (kg/m²)", 10.0, 100.0, NEW["bmi"], step=0.5, format="%.1f", key="in_bmi", disabled=bmi_missing)
+    b.checkbox("Not recorded", key="in_bmi_missing", help="The model estimates a missing BMI from similar patients.")
+    bmi_known = not bmi_missing
     st.html('<p class="fgroup-t">Lifestyle and background</p>')
     smoking = st.selectbox("Smoking", SMOKING, index=SMOKING.index(NEW["smoking_status"]),
                            format_func=SMOKING_LABELS.get, key="in_smoke")
@@ -137,6 +138,7 @@ def render() -> None:
     band = str(data.age_band(pd.Series([patient["age"]])).iloc[0])
     stroke_rate = m.meta["stroke_rate"]
 
+    rows = m.what_if(row)
     with right:
         with ui.panel("B", "Result", "the model's estimate and where it falls"):
             times = p / stroke_rate
@@ -151,9 +153,15 @@ def render() -> None:
                 outcome = "had a stroke" if record["stroke"] == 1 else "had not had a stroke"
                 ui.caution(f"<b>Held-out outcome:</b> this patient {outcome}. The model never saw them in training.")
 
+        with ui.panel("C", "Next step", NEXT[tier][0]):
+            st.html(f'<div class="next">{ui.tier_badge(tier)}<p>{NEXT[tier][1]}</p></div>')
+            ui.fast()
+            st.download_button("Download the screening summary", _report(patient, p, tier, rows), "strokescope-summary.txt",
+                               icon=":material/download:", key="dl_summary", width="stretch")
+
     contrib = m.explain(row).iloc[0]
     mult = np.exp(contrib)
-    with ui.panel("C", "Results and what they do to the risk",
+    with ui.panel("D", "Results and what they do to the risk",
                   "each finding with its flag and reference interval, and the factor by which the model multiplies the "
                   "odds compared with the average patient"):
         ui.results([("Measurements", [_row(f, patient, mult) for f in ("avg_glucose_level", "bmi")]),
@@ -167,25 +175,15 @@ def render() -> None:
                 "Odds multipliers come straight from the logistic regression: the average patient's odds times every "
                 "multiplier give this patient's odds exactly. Rows in grey barely move the score.")
 
-    a, b = st.columns(2, gap="medium")
-    rows = m.what_if(row)
-    with a:
-        with ui.panel("D", "If the treatable factors were controlled", "the model's risk after one change"):
-            if rows:
-                ui.what_if(rows)
-            else:
-                ui.note("This patient has no hypertension and a glucose level under 125 mg/dl: no treatable factor the "
-                        "model can measure is raised.")
-            ui.caution("These are the scores of patients with that profile in the data, not a promise of what treatment "
-                       "achieves. Quitting smoking and losing weight matter medically, but this data cannot measure their "
-                       "benefit (former smokers are older; BMI adds almost nothing once age is known).")
-    with b:
-        with ui.panel("E", "Next step", NEXT[tier][0]):
-            st.html(f'<div style="margin:-.2rem 0 .7rem">{ui.tier_badge(tier)}</div>'
-                    f'<p style="margin:0 0 .8rem;line-height:1.6">{NEXT[tier][1]}</p>')
-            ui.fast()
-            st.download_button("Download the screening summary", _report(patient, p, tier, rows), "strokescope-summary.txt",
-                               icon=":material/download:", key="dl_summary")
+    with ui.panel("E", "If the treatable factors were controlled", "the model's risk after one change"):
+        if rows:
+            ui.what_if(rows)
+        else:
+            ui.note("This patient has no hypertension and a glucose level under 125 mg/dl: no treatable factor the "
+                    "model can measure is raised.")
+        ui.caution("These are the scores of patients with that profile in the data, not a promise of what treatment "
+                   "achieves. Quitting smoking and losing weight matter medically, but this data cannot measure their "
+                   "benefit (former smokers are older; BMI adds almost nothing once age is known).")
     ui.signature(f"Calculated by the StrokeScope logistic regression (trained on {m.meta['train_rows']:,} patients). Glucose "
                  "reference: an average below 117 mg/dl matches an HbA1c below 5.7%. A screening aid; not reviewed by a clinician.")
     ui.footer()

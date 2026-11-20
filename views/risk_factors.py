@@ -42,15 +42,15 @@ def render() -> None:
     with ui.panel("B", "Conditions and measurements", "share who had a stroke in each group"):
         a, b = st.columns(2, gap="large")
         with a:
-            st.caption("Hypertension")
+            st.html('<p class="fgroup-t">Hypertension</p>')
             charts.show(_bars(df, df["hypertension"].map({0: "No hypertension", 1: "Hypertension"})), "hyp")
-            st.caption("Average glucose (mg/dl)")
+            st.html('<p class="fgroup-t">Average glucose (mg/dl)</p>')
             charts.show(_bars(df, pd.cut(df["avg_glucose_level"], [0, 100, 140, 200, 400],
                                          labels=["Under 100", "100-140", "140-200", "Over 200"])), "glu")
         with b:
-            st.caption("Heart disease")
+            st.html('<p class="fgroup-t">Heart disease</p>')
             charts.show(_bars(df, df["heart_disease"].map({0: "No heart disease", 1: "Heart disease"})), "heart")
-            st.caption("BMI (patients with a recorded BMI)")
+            st.html('<p class="fgroup-t">BMI (patients with a recorded BMI)</p>')
             charts.show(_bars(df.dropna(subset=["bmi"]), pd.cut(df["bmi"].dropna(), [0, 18.5, 25, 30, 35, 100],
                                                                 labels=["Under 18.5", "18.5-25", "25-30", "30-35", "Over 35"])),
                         "bmi")
@@ -60,14 +60,14 @@ def render() -> None:
     with ui.panel("C", "Lifestyle and background", "mostly a reflection of age"):
         a, b = st.columns(2, gap="large")
         with a:
-            st.caption("Smoking")
+            st.html('<p class="fgroup-t">Smoking</p>')
             charts.show(_bars(df, df["smoking_status"], SMOKING_LABELS), "smoke")
-            st.caption("Sex")
+            st.html('<p class="fgroup-t">Sex</p>')
             charts.show(_bars(df, df["gender"]), "sex")
         with b:
-            st.caption("Work type")
+            st.html('<p class="fgroup-t">Work type</p>')
             charts.show(_bars(df, df["work_type"], WORK_LABELS), "work")
-            st.caption("Marital status and residence")
+            st.html('<p class="fgroup-t">Marital status and residence</p>')
             both = pd.concat([df.assign(g=df["ever_married"].map({"Yes": "Ever married", "No": "Never married"})),
                               df.assign(g=df["Residence_type"] + " residence")])
             charts.show(_bars(both, both["g"]), "bg")

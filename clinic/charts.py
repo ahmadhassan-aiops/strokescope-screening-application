@@ -93,15 +93,20 @@ def age_lines(table: pd.DataFrame, by_label: dict[int, str]) -> go.Figure:
 
 
 def rate_bars(labels: list[str], rates: list[float], counts: list[int], overall: float, highlight: list[bool] | None = None) -> go.Figure:
+    """Share with a stroke per group. Values sit in their own column at the right, clear of the bars and the average line."""
     highlight = highlight or [False] * len(labels)
+    top = max(max(rates), overall) * 1.12
     fig = go.Figure(go.Bar(
-        x=rates, y=labels, orientation="h", marker=dict(color=[t.RAISES if h else "#9aa3b5" for h in highlight], cornerradius=4),
-        text=[f"{r:.1%}" for r in rates], textposition="outside", textfont=dict(family=MONO, color=t.INK, size=12),
+        x=rates, y=labels, orientation="h", marker=dict(color=[t.RAISES if h else "#9aa3b5" for h in highlight]),
         customdata=np.array(counts)[:, None], hovertemplate="%{y}<br>%{x:.1%} of %{customdata[0]:,} patients<extra></extra>"))
-    fig.add_vline(x=overall, line=dict(color=t.BRAND, width=1.5, dash="dot"))
+    fig.add_trace(go.Scatter(
+        x=[top * 1.2] * len(labels), y=labels, mode="text", text=[f"{r:.1%}" for r in rates], textposition="middle left",
+        textfont=dict(family=MONO, color=[t.RAISES if h else t.INK for h in highlight], size=12), hoverinfo="skip"))
+    fig.add_vline(x=overall, line=dict(color=t.BRAND, width=1.5, dash="dot"), layer="below")
     fig.add_annotation(x=overall, y=1.0, yref="paper", text=f"All patients {overall:.1%}", showarrow=False,
                        font=dict(color=t.BRAND, size=11), xanchor="left", xshift=4, yanchor="bottom")
-    fig.update_xaxes(tickformat=".0%", range=[0, max(rates) * 1.25], title="Had a stroke")
+    fig.update_xaxes(tickformat=".0%", range=[0, top * 1.2], title="Had a stroke",
+                     tickvals=[v for v in np.linspace(0, top, 5)], ticktext=[f"{v:.0%}" if top > .1 else f"{v:.1%}" for v in np.linspace(0, top, 5)])
     fig.update_yaxes(autorange="reversed")
     return style(fig, 60 + 46 * len(labels))
 

@@ -8,6 +8,7 @@ import html
 import math
 from contextlib import contextmanager
 
+import pandas as pd
 import streamlit as st
 
 from clinic import theme as t
@@ -46,7 +47,8 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
 .sec {{ display: flex; align-items: baseline; gap: .7rem; border-bottom: 2px solid var(--rule); padding: 0 0 .35rem; margin: -.2rem 0 .3rem; }}
 .sec-k {{ font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; color: #fff; background: var(--brand); padding: .12rem .45rem; font-weight: 600; flex: none; }}
 .sec-t {{ font-size: 1.08rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; margin: 0; }}
-.sec-s {{ font-size: .84rem; color: var(--muted); margin: .25rem 0 .7rem; }}
+.sec-s {{ font-size: .84rem; color: var(--muted); margin: .4rem 0 .8rem; line-height: 1.45; }}
+.sec-s::first-letter {{ text-transform: uppercase; }}
 
 /* Summary row */
 .stats {{ display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); margin: 0 0 1rem; background: var(--panel);
@@ -65,6 +67,7 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
 .lab td {{ padding: .42rem .5rem; border-bottom: 1px solid var(--line); vertical-align: middle; }}
 .lab tr.grp td {{ background: var(--shade); font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
                   color: var(--brand); font-weight: 700; padding: .3rem .5rem; }}
+.lab tr.em td {{ font-weight: 700; background: var(--brand-soft); }}
 .lab td.r {{ font-family: var(--mono); font-weight: 600; white-space: nowrap; }}
 .lab td.f {{ font-family: var(--mono); font-weight: 700; width: 2.4rem; text-align: center; }}
 .lab td.ref {{ font-family: var(--mono); font-size: .78rem; color: var(--muted); background: var(--shade); white-space: nowrap; }}
@@ -78,8 +81,9 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
 .res {{ display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; align-items: end; border: 1px solid var(--line);
         border-left: 5px solid var(--c); background: var(--s); padding: .7rem .9rem; }}
 .res-n {{ font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }}
-.res-v {{ font-family: var(--mono); font-size: 2.6rem; font-weight: 700; color: var(--c); line-height: 1; margin: .2rem 0 0; }}
-.res-v small {{ font-size: .9rem; font-weight: 600; color: var(--ink); margin-left: .5rem; }}
+.res-v {{ font-family: var(--mono); font-size: 2.6rem; font-weight: 700; color: var(--c); line-height: 1; margin: .3rem 0 0;
+          display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; }}
+.res-v small {{ font-size: .9rem; font-weight: 600; color: var(--ink); display: inline-flex; }}
 .res-ref {{ font-family: var(--mono); font-size: .76rem; color: var(--muted); text-align: right; line-height: 1.6; }}
 .res-ref b {{ color: var(--ink); }}
 .tier {{ display: inline-flex; align-items: center; gap: .35rem; padding: .22rem .6rem; font-family: var(--mono); font-weight: 700;
@@ -97,7 +101,8 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
 .mk.up span {{ bottom: 30px; }} .mk.down span {{ color: var(--muted); font-weight: 500; }}
 .mk.me i {{ width: 14px; height: 14px; background: var(--brand); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--brand); transform: rotate(45deg); margin-top: -1px; }}
 .legend-z {{ display: flex; gap: 1rem; flex-wrap: wrap; font-family: var(--mono); font-size: .7rem; color: var(--muted); margin: .9rem 0 0; }}
-.legend-z span::before {{ content: ""; display: inline-block; width: .65rem; height: .65rem; background: var(--c); margin-right: .35rem; vertical-align: -1px; }}
+.legend-z .lg-note {{ margin-left: auto; color: var(--faint); }}
+.legend-z span:not(.lg-note)::before {{ content: ""; display: inline-block; width: .65rem; height: .65rem; background: var(--c); margin-right: .35rem; vertical-align: -1px; }}
 
 /* Comments and cautions */
 .note {{ border-top: 1px dashed var(--line); padding: .6rem 0 0; margin: .7rem 0 0; font-size: .9rem; line-height: 1.6; }}
@@ -133,14 +138,22 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
 .pcard {{ display: grid; grid-template-columns: 1fr auto; gap: .1rem .6rem; padding: .4rem .2rem; border-bottom: 1px solid var(--line); }}
 .pcard-t {{ font-family: var(--mono); font-weight: 600; font-size: .82rem; margin: 0; }}
 .pcard-r {{ font-family: var(--mono); font-weight: 700; color: var(--c); font-size: .9rem; margin: 0; text-align: right; }}
+.lane-more {{ font-family: var(--mono); font-size: .72rem; color: var(--faint); margin: .5rem .2rem 0; }}
+[data-testid="stDataFrame"] > div, [data-testid="stDataFrame"] [data-testid="stDataFrameResizable"] {{ border-radius: 0 !important; }}
 .pcard-s {{ grid-column: 1 / -1; font-size: .76rem; color: var(--muted); margin: 0; }}
 
-/* Natural frequency tree */
-.tree {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .6rem 1.2rem; align-items: center; }}
-.node {{ border: 1px solid var(--line); border-top: 3px solid var(--c); padding: .5rem .75rem; background: #fff; }}
-.node b {{ font-family: var(--mono); font-size: 1.35rem; display: block; color: var(--ink); }}
+/* Natural frequency tree: boxes joined by bracket lines */
+.tree {{ display: flex; align-items: center; overflow-x: auto; padding: .3rem 0 .2rem; width: fit-content; max-width: 100%; margin: 0 auto; }}
+.tree .node {{ flex: none; width: 15rem; border: 1px solid var(--line); border-top: 3px solid var(--c); padding: .5rem .75rem; background: #fff; }}
+.node b {{ font-family: var(--mono); font-size: 1.35rem; display: block; color: var(--ink); line-height: 1.2; }}
 .node span {{ font-size: .8rem; color: var(--muted); }}
-.node.root {{ grid-row: span 4; }} .node.mid {{ grid-row: span 2; }}
+.br {{ position: relative; display: flex; flex-direction: column; gap: .7rem; margin-left: 1.5rem; padding-left: 1.5rem; }}
+.br::after {{ content: ""; position: absolute; left: -1.5rem; top: 50%; width: 1.5rem; border-top: 1.5px solid #9aa2ae; }}
+.br > * {{ position: relative; }}
+.br > *::before {{ content: ""; position: absolute; left: -1.5rem; top: 50%; width: 1.5rem; border-top: 1.5px solid #9aa2ae; }}
+.br > :first-child::after {{ content: ""; position: absolute; left: -1.5rem; top: 50%; bottom: -.35rem; border-left: 1.5px solid #9aa2ae; }}
+.br > :last-child::after {{ content: ""; position: absolute; left: -1.5rem; top: -.35rem; bottom: 50%; border-left: 1.5px solid #9aa2ae; }}
+.grp {{ display: flex; align-items: center; }}
 
 /* Factor cards (kept for other pages) */
 .fgroup-t {{ font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--brand); font-weight: 700; margin: .6rem 0 .35rem; }}
@@ -149,6 +162,21 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
 .fcard-n {{ font-size: .78rem; color: var(--muted); margin: 0; }} .fcard-v {{ font-weight: 600; margin: .1rem 0; }}
 .fcard-x {{ font-family: var(--mono); font-size: .82rem; color: var(--c); margin: 0; font-weight: 600; }}
 
+/* Next step */
+.next {{ display: grid; grid-template-columns: auto 1fr; gap: .8rem; align-items: start; margin: 0 0 .9rem; }}
+.next p {{ margin: 0; line-height: 1.6; font-size: .93rem; }}
+@media (max-width: 760px) {{ .next {{ grid-template-columns: 1fr; }} }}
+
+/* Top navigation: report tabs, the open one in maroon with a heavy underline */
+header[data-testid="stHeader"] {{ box-shadow: 0 1px 0 rgba(29,35,48,.04); }}
+[data-testid="stTopNavLink"] {{ border-radius: 0 !important; padding: .35rem .75rem !important; box-shadow: inset 0 -3px 0 transparent; }}
+[data-testid="stTopNavLink"] p {{ font-family: var(--sans); font-weight: 600; font-size: .9rem; color: var(--muted); }}
+[data-testid="stTopNavLink"]:hover {{ background: var(--brand-soft) !important; }}
+[data-testid="stTopNavLink"]:hover :is(p, [data-testid="stIconMaterial"]) {{ color: var(--brand); }}
+[data-testid="stTopNavLink"][aria-current="page"], [data-testid="stTopNavLinkContainer"]:has([aria-current="page"]) [data-testid="stTopNavLink"] {{
+    background: var(--brand-soft) !important; box-shadow: inset 0 -3px 0 var(--brand); }}
+[data-testid="stTopNavLink"][aria-current="page"] :is(p, [data-testid="stIconMaterial"]) {{ color: var(--brand); }}
+
 .foot {{ margin: 2rem 0 .5rem; padding: .9rem 0 0; border-top: 3px double var(--rule); font-size: .8rem; color: var(--muted); line-height: 1.65; }}
 .foot a {{ color: var(--brand); font-weight: 600; }}
 .sig {{ font-family: var(--mono); font-size: .72rem; color: var(--muted); letter-spacing: .04em; margin: 1rem 0 0; padding-top: .5rem; border-top: 1px solid var(--line); }}
@@ -156,8 +184,83 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
 """
 
 
+CONTROLS = """<style>
+/* Controls: one shape, one border weight and one focus ring for every button, segment and input */
+:root { --k-a: #7b2343; --k-a-text: #5c1a32; --k-fill: #7b2343; --k-fill-2: #5c1a32; --k-soft: #f8eef2; --k-ink: #1d2330;
+        --k-line: #a9b0bb; --k-panel: #ffffff; --k-r: 0px; }
+[data-testid="stMain"] :is([data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-primary"],
+  [data-testid="stBaseButton-secondaryFormSubmit"], [data-testid="stBaseButton-primaryFormSubmit"],
+  [data-testid="stBaseButton-segmented_control"], [data-testid="stBaseButton-segmented_controlActive"],
+  [data-testid="stBaseButton-pills"], [data-testid="stBaseButton-pillsActive"]) {
+    border-radius: var(--k-r) !important; border: 1.5px solid var(--k-line) !important; background: var(--k-panel) !important;
+    color: var(--k-ink) !important; box-shadow: none !important; min-height: 2.45rem; padding: .35rem .95rem !important;
+    transition: border-color .12s ease, background-color .12s ease, color .12s ease; }
+[data-testid="stMain"] :is([data-testid^="stBaseButton-secondary"], [data-testid^="stBaseButton-primary"],
+  [data-testid^="stBaseButton-segmented_control"], [data-testid^="stBaseButton-pills"]) p {
+    font-family: 'Libre Franklin', 'Segoe UI', sans-serif; font-size: .88rem; font-weight: 600; letter-spacing: .01em; text-transform: none; color: inherit; }
+[data-testid="stMain"] :is([data-testid^="stBaseButton-secondary"], [data-testid="stBaseButton-segmented_control"],
+  [data-testid="stBaseButton-pills"]):hover { border-color: var(--k-a) !important; color: var(--k-a-text) !important; background: var(--k-soft) !important; }
+[data-testid="stMain"] :is([data-testid^="stBaseButton-primary"], [data-testid="stBaseButton-segmented_controlActive"],
+  [data-testid="stBaseButton-pillsActive"]) { background: var(--k-fill) !important; border-color: var(--k-fill) !important; color: #fff !important; }
+[data-testid="stMain"] :is([data-testid^="stBaseButton-primary"], [data-testid="stBaseButton-segmented_controlActive"],
+  [data-testid="stBaseButton-pillsActive"]):hover { background: var(--k-fill-2) !important; border-color: var(--k-fill-2) !important; color: #fff !important; }
+[data-testid="stMain"] :is([data-testid^="stBaseButton-secondary"], [data-testid^="stBaseButton-primary"]):active { transform: translateY(1px); }
+[data-testid="stMain"] [data-testid^="stBaseButton-"]:disabled { opacity: .45; }
+
+/* Segmented controls: one joined strip, the chosen segment filled */
+[data-testid="stMain"] [data-baseweb="button-group"] { gap: 0 !important; width: fit-content; max-width: 100%; border-radius: var(--k-r); }
+[data-testid="stMain"] [data-baseweb="button-group"] > button { border-radius: 0 !important; margin: 0 0 0 -1.5px !important; position: relative;
+    padding: .35rem .8rem !important; white-space: nowrap; }
+[data-testid="stMain"] [data-baseweb="button-group"] > button:first-child { margin-left: 0 !important; border-radius: var(--k-r) 0 0 var(--k-r) !important; }
+[data-testid="stMain"] [data-baseweb="button-group"] > button:last-child { border-radius: 0 var(--k-r) var(--k-r) 0 !important; }
+[data-testid="stMain"] [data-baseweb="button-group"] > button:only-child { border-radius: var(--k-r) !important; }
+[data-testid="stMain"] [data-baseweb="button-group"] > button:hover { z-index: 1; }
+[data-testid="stMain"] [data-baseweb="button-group"] > [data-testid$="Active"] { z-index: 2; }
+
+/* The focus ring: the same 2px ring, 2px off the edge, on every control (mouse click and keyboard alike) */
+[data-testid="stMain"] [data-testid^="stBaseButton-"]:focus, [data-testid="stMain"] [data-testid^="stBaseButton-"]:focus-visible,
+[data-testid="stPageLink"] a:focus-visible, [data-testid="stTopNavLink"]:focus-visible, [data-testid="stSidebarNavLink"]:focus-visible,
+[data-testid="stMain"] [role="slider"]:focus-visible, [data-testid="stMain"] summary:focus-visible, [data-testid="stMain"] a:focus-visible {
+    outline: 2px solid var(--k-a) !important; outline-offset: 2px; box-shadow: none !important; }
+[data-testid="stMain"] [data-baseweb="button-group"] > button:focus, [data-testid="stMain"] [data-baseweb="button-group"] > button:focus-visible { outline: none !important; }
+[data-testid="stMain"] [data-baseweb="button-group"]:focus-within { outline: 2px solid var(--k-a); outline-offset: 2px; }
+[data-testid="stMain"] [data-testid="stCheckbox"] label:has(input:focus-visible) { outline: 2px solid var(--k-a); outline-offset: 3px; border-radius: var(--k-r); }
+
+/* Inputs: square to the kit, a firm border, the accent border and ring while typing */
+[data-testid="stMain"] :is([data-testid="stNumberInputContainer"], [data-testid="stTextInput"] [data-baseweb="input"],
+  [data-testid="stDateInput"] [data-baseweb="input"], [data-baseweb="select"] > div, [data-baseweb="textarea"]) {
+    border-radius: var(--k-r) !important; border: 1.5px solid var(--k-line) !important; background: var(--k-panel) !important;
+    min-height: 2.45rem; transition: border-color .12s ease; }
+[data-testid="stMain"] :is([data-testid="stNumberInputContainer"], [data-testid="stTextInput"] [data-baseweb="input"],
+  [data-baseweb="select"] > div, [data-baseweb="textarea"]):hover { border-color: var(--k-a) !important; }
+[data-testid="stMain"] :is([data-testid="stNumberInputContainer"], [data-testid="stTextInput"] [data-baseweb="input"],
+  [data-testid="stDateInput"] [data-baseweb="input"], [data-baseweb="select"] > div, [data-baseweb="textarea"]):focus-within {
+    border-color: var(--k-a) !important; outline: 2px solid var(--k-a); outline-offset: 2px; box-shadow: none !important; }
+[data-testid="stMain"] :is([data-baseweb="input"], [data-baseweb="base-input"], [data-baseweb="textarea"] > div, input, textarea) { background: transparent !important; }
+[data-testid="stMain"] [data-testid="stNumberInputContainer"] [data-baseweb="input"] { border: none !important; }
+[data-testid="stMain"] :is(input, textarea) { font-family: 'Roboto Mono', Consolas, monospace; color: var(--k-ink); }
+[data-testid="stMain"] [data-testid="stNumberInputContainer"] > div:last-child { border-left: 1px solid var(--k-line); }
+[data-testid="stMain"] :is([data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"]) { color: var(--k-ink) !important; border-radius: 0 !important; width: 2.1rem; }
+[data-testid="stMain"] :is([data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"]):hover:not(:disabled) { background: var(--k-soft) !important; color: var(--k-a-text) !important; }
+[data-testid="stMain"] [data-testid="stNumberInputStepUp"] { border-left: 1px solid var(--k-line) !important; }
+[data-baseweb="popover"] [data-baseweb="menu"], [data-baseweb="popover"] ul[role="listbox"] { border-radius: var(--k-r) !important; border: 1.5px solid var(--k-line); }
+[data-baseweb="popover"] li[role="option"]:hover, [data-baseweb="popover"] li[aria-selected="true"] { background: var(--k-soft) !important; color: var(--k-a-text); }
+
+/* Labels, sliders, expanders and the file drop zone */
+[data-testid="stMain"] [data-testid="stWidgetLabel"]:not([data-testid="stCheckbox"] *) p { font-family: 'Roboto Mono', Consolas, monospace; font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #535b69; }
+[data-testid="stMain"] [data-baseweb="slider"] [role="slider"] { box-shadow: 0 0 0 3px var(--k-panel), 0 0 0 4.5px var(--k-fill) !important; }
+[data-testid="stMain"] [data-testid="stSliderThumbValue"] { font-family: 'Roboto Mono', Consolas, monospace; font-weight: 600; }
+[data-testid="stMain"] [data-testid="stExpander"] details { border: 1.5px solid var(--k-line) !important; border-radius: var(--k-r) !important; background: var(--k-panel); }
+[data-testid="stMain"] [data-testid="stExpander"] summary:hover { color: var(--k-a-text); }
+[data-testid="stMain"] [data-testid="stFileUploaderDropzone"] { border: 1.5px dashed var(--k-line) !important; border-radius: var(--k-r) !important; background: var(--k-panel) !important; }
+[data-testid="stMain"] [data-testid="stFileUploaderDropzone"]:hover { border-color: var(--k-a) !important; background: var(--k-soft) !important; }
+[data-testid="stMain"] [data-testid="stAlert"] > div { border-radius: var(--k-r) !important; }
+[data-baseweb="modal"] [role="dialog"] { border-radius: var(--k-r) !important; }
+</style>"""
+
+
 def inject_css() -> None:
-    st.html(CSS)
+    st.html(CSS + CONTROLS)
 
 
 def icon(name: str) -> str:
@@ -232,7 +335,7 @@ def ruler(p: float, threshold: float, high: float, marks: list[tuple[float, str]
             f'<div class="legend-z"><span style="--c:{t.TIER["Routine"]}">Routine &lt; {pct(threshold)}</span>'
             f'<span style="--c:{t.TIER["Check"]}">Check {pct(threshold)} to {pct(high)}</span>'
             f'<span style="--c:{t.TIER["Priority"]}">Priority &ge; {pct(high)}</span>'
-            '<span style="--c:transparent">log scale, 0.2% to 50%</span></div>')
+            '<span class="lg-note">log scale, 0.2% to 50%</span></div>')
 
 
 def results(groups: list[tuple[str, list[dict]]]) -> None:
@@ -287,6 +390,27 @@ def what_if(rows: list[dict]) -> None:
             f"</tr></thead><tbody>{body}</tbody></table>")
 
 
+def table(df, formats: dict[str, str] | None = None, mark: str = "deployed") -> None:
+    """A DataFrame as a lab table: text columns left, numbers right in mono. Rows whose first cell mentions `mark` are bold."""
+    formats = formats or {}
+    num = [c for c in df.columns if c in formats or pd.api.types.is_numeric_dtype(df[c])]
+    head = "".join(f'<th style="text-align:{"right" if c in num else "left"}">{html.escape(str(c))}</th>' for c in df.columns)
+    body = []
+    for _, r in df.iterrows():
+        strong = mark and mark in str(r.iloc[0])
+        cells = []
+        for c in df.columns:
+            v = r[c]
+            if c in num:
+                txt = format(v, formats.get(c, "")) if formats.get(c) else str(v)
+                cells.append(f'<td class="r" style="text-align:right">{html.escape(txt)}</td>')
+            else:
+                cells.append(f"<td>{html.escape(str(v))}</td>")
+        cls = ' class="em"' if strong else ""
+        body.append(f"<tr{cls}>{''.join(cells)}</tr>")
+    st.html(f'<table class="lab"><thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table>')
+
+
 def note(*paras: str) -> None:
     st.html('<div class="note">' + "".join(f"<p>{p}</p>" for p in paras) + "</div>")
 
@@ -322,16 +446,20 @@ def freq_tree(n: int, strokes: int, found: int, alarms: int) -> None:
     """Natural frequencies: n patients -> stroke / no stroke -> found / missed, false alarm / cleared."""
     missed, others = strokes - found, n - strokes
     cleared = others - alarms
-    node = lambda v, label, c, cls="": (f'<div class="node {cls}" style="--c:{c}"><b>{v:,}</b><span>{label}</span></div>')  # noqa: E731
-    st.html('<div class="tree">'
-            + node(n, "patients screened", t.BRAND, "root")
-            + node(strokes, "had a stroke", t.TIER["Priority"], "mid")
-            + node(found, f"<b style='font-size:.8rem;display:inline;font-family:inherit;color:{t.LOWERS}'>found</b>: flagged for a check", t.LOWERS)
-            + node(missed, f"<b style='font-size:.8rem;display:inline;font-family:inherit;color:{t.RAISES}'>missed</b>: below the line", t.RAISES)
-            + node(others, "no stroke", t.FAINT, "mid")
-            + node(alarms, "false alarms: checked, no stroke", t.TIER["Check"])
-            + node(cleared, "correctly left to routine care", t.FAINT)
-            + "</div>")
+
+    def node(v: int, label: str, c: str) -> str:
+        return f'<div class="node" style="--c:{c}"><b>{v:,}</b><span>{label}</span></div>'
+
+    def word(w: str, c: str) -> str:
+        return f"<b style='font-size:.8rem;display:inline;font-family:inherit;color:{c}'>{w}</b>"
+
+    stroke = (f'<div class="grp">{node(strokes, "had a stroke", t.TIER["Priority"])}<div class="br">'
+              + node(found, f"{word('found', t.LOWERS)}: flagged for a check", t.LOWERS)
+              + node(missed, f"{word('missed', t.RAISES)}: below the line", t.RAISES) + "</div></div>")
+    other = (f'<div class="grp">{node(others, "no stroke", t.FAINT)}<div class="br">'
+             + node(alarms, "false alarms: checked, no stroke", t.TIER["Check"])
+             + node(cleared, "correctly left to routine care", t.FAINT) + "</div></div>")
+    st.html(f'<div class="tree">{node(n, "patients screened", t.BRAND)}<div class="br">{stroke}{other}</div></div>')
 
 
 def signature(text: str) -> None:

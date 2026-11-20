@@ -76,7 +76,8 @@ def render() -> None:
                 cards = "".join(ui.patient_card(f"#{int(r['patient_id'])}", r["proba"], lane, fmt.summary(r)) for _, r in show.iterrows())
                 st.html(cards or '<p style="color:var(--muted);font-size:.85rem">No patient in this lane.</p>')
                 if len(d) > len(show):
-                    st.caption(f"+ {len(d) - len(show):,} more in the full list" + (" (lowest risks shown)" if lane == "Routine" else ""))
+                    st.html(f'<p class="lane-more">+ {len(d) - len(show):,} more in the full list'
+                            + (" (lowest risks shown)" if lane == "Routine" else "") + "</p>")
 
     if held_out:
         with ui.panel(next(letter), "What each lane holds", "held-out patients by real outcome"):
