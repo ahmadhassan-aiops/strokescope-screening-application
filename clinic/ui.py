@@ -27,7 +27,7 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
         -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }}
 
 /* Report sheets: square, a hairline border and a paper shadow */
-[data-testid="stVerticalBlockBorderWrapper"] {{ border: 1px solid var(--line) !important; border-radius: 0 !important;
+[data-testid="stVerticalBlock"][data-test-scroll-behavior] {{ border: 1px solid var(--line) !important; border-radius: 0 !important;
     background: var(--panel); box-shadow: 0 1px 2px rgba(29,35,48,.06), 0 6px 18px -12px rgba(29,35,48,.25); }}
 
 /* Letterhead */
