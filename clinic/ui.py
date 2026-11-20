@@ -124,23 +124,36 @@ header[data-testid="stHeader"] {{ background: #ffffff; border-bottom: 3px solid 
 .fast-g b {{ font-family: var(--mono); font-size: 1.5rem; color: {t.TIER['Priority']}; display: block; line-height: 1.1; }}
 .fast-g span {{ font-size: .82rem; }}
 
-/* Specimen / patient block */
-.sheet {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1.5px solid var(--rule); margin: .2rem 0 0; }}
-.sheet div {{ display: grid; grid-template-columns: 9rem 1fr; gap: .5rem; padding: .32rem .2rem; border-bottom: 1px solid var(--line); font-size: .86rem; }}
-.sheet dt {{ font-family: var(--mono); font-size: .68rem; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding-top: .15rem; }}
+/* Specimen / patient block: one labelled row per field */
+.sheet {{ display: grid; grid-template-columns: 1fr; border-top: 1.5px solid var(--rule); margin: .6rem 0 0; padding: 0 !important; }}
+.sheet > div {{ margin: 0; }}
+.sheet div {{ display: grid; grid-template-columns: minmax(7.5rem, 42%) 1fr; gap: .8rem; align-items: baseline; padding: .4rem .3rem;
+              border-bottom: 1px solid var(--line); font-size: .9rem; }}
+.sheet div:nth-child(even) {{ background: var(--shade); }}
+.sheet dt {{ font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }}
 .sheet dd {{ margin: 0; font-weight: 600; }}
 
-/* Worklist (triage lanes) */
-.lane-h {{ display: flex; justify-content: space-between; align-items: center; padding: .4rem .6rem; background: var(--c); color: #fff; margin: 0; }}
-.lane-h b {{ font-family: var(--mono); font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; display: inline-flex; gap: .3rem; align-items: center; }}
+/* Worklist (triage lanes): every patient row has the same two-line height, so rows line up across the lanes */
+.lane-h {{ display: flex; justify-content: space-between; align-items: center; padding: .45rem .7rem; background: var(--c); color: #fff; margin: 0; }}
+.lane-h b {{ font-family: var(--mono); font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; display: inline-flex; gap: .35rem; align-items: center; }}
 .lane-h > span {{ font-family: var(--mono); font-size: 1.15rem; font-weight: 700; }}
-.lane-n {{ font-size: .78rem; color: var(--muted); margin: .4rem 0 .5rem; line-height: 1.45; }}
-.pcard {{ display: grid; grid-template-columns: 1fr auto; gap: .1rem .6rem; padding: .4rem .2rem; border-bottom: 1px solid var(--line); }}
-.pcard-t {{ font-family: var(--mono); font-weight: 600; font-size: .82rem; margin: 0; }}
-.pcard-r {{ font-family: var(--mono); font-weight: 700; color: var(--c); font-size: .9rem; margin: 0; text-align: right; }}
-.lane-more {{ font-family: var(--mono); font-size: .72rem; color: var(--faint); margin: .5rem .2rem 0; }}
-[data-testid="stDataFrame"] > div, [data-testid="stDataFrame"] [data-testid="stDataFrameResizable"] {{ border-radius: 0 !important; }}
-.pcard-s {{ grid-column: 1 / -1; font-size: .76rem; color: var(--muted); margin: 0; }}
+.lane-n {{ font-size: .8rem; color: var(--muted); margin: 0; padding: .5rem .7rem; line-height: 1.45; min-height: 4.6rem; box-sizing: border-box;
+           background: var(--shade); border: 1px solid var(--line); border-top: none; }}
+.lane-n b {{ color: var(--ink); font-weight: 600; }}
+.prows {{ border: 1px solid var(--line); border-top: none; }}
+.prow {{ display: grid; grid-template-columns: minmax(0, 1fr) 5.2rem; gap: .3rem .7rem; align-items: center; padding: .5rem .7rem;
+         border-top: 1px solid var(--line); height: 3.75rem; box-sizing: border-box; }}
+.prow:first-child {{ border-top: none; }}
+.prow-id {{ font-family: var(--mono); font-weight: 600; font-size: .82rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+.prow-id span {{ font-family: var(--sans); font-weight: 400; color: var(--muted); margin-left: .45rem; font-size: .8rem; }}
+.prow-r {{ font-family: var(--mono); font-weight: 700; color: var(--c); font-size: .92rem; margin: 0; text-align: right; }}
+.prow-tags {{ grid-column: 1 / -1; display: flex; gap: .3rem; overflow: hidden; white-space: nowrap; min-width: 0; }}
+.tg {{ font-family: var(--mono); font-size: .64rem; letter-spacing: .03em; padding: .05rem .35rem; border: 1px solid var(--line); color: var(--ink);
+       background: #fff; flex: none; }}
+.tg.none {{ border-color: transparent; background: transparent; color: var(--muted); padding-left: .1rem; }}
+.tg.out {{ border-color: {t.TIER['Priority']}; color: {t.TIER['Priority']}; font-weight: 700; }}
+.lane-more {{ font-family: var(--mono); font-size: .72rem; color: var(--muted); margin: 0; padding: .5rem .7rem; border: 1px solid var(--line);
+              border-top: none; background: var(--shade); }}
 
 /* Natural frequency tree: boxes joined by bracket lines */
 .tree {{ display: flex; align-items: center; overflow-x: auto; padding: .3rem 0 .2rem; width: fit-content; max-width: 100%; margin: 0 auto; }}
@@ -327,10 +340,13 @@ def ruler(p: float, threshold: float, high: float, marks: list[tuple[float, str]
     zones = (f'<div class="z" style="width:{a}%;background:{t.TIER_SOFT["Routine"]};border:1px solid {t.TIER["Routine"]}77"></div>'
              f'<div class="z" style="width:{b - a}%;background:{t.TIER_SOFT["Check"]};border:1px solid {t.TIER["Check"]}77"></div>'
              f'<div class="z" style="width:{100 - b}%;background:{t.TIER_SOFT["Priority"]};border:1px solid {t.TIER["Priority"]}77"></div>')
+    def side(x: float) -> str:  # keep labels near the ends inside the ruler
+        return "left:auto;right:-8px;transform:none" if x > 82 else "left:-8px;transform:none" if x < 18 else ""
+
     ms = "".join(f'<div class="mk down" style="left:{_x(v)}%;--c:{t.FAINT}"><i></i>'
-                 f'<span style="top:{28 + 16 * i}px">{html.escape(label)}</span></div>'
+                 f'<span style="top:{28 + 16 * i}px;{side(_x(v))}">{html.escape(label)}</span></div>'
                  for i, (v, label) in enumerate(sorted(marks)))
-    me = f'<div class="mk up me" style="left:{_x(p)}%"><i></i><span>This patient {pct(p)}</span></div>'
+    me = f'<div class="mk up me" style="left:{_x(p)}%"><i></i><span style="{side(_x(p))}">This patient {pct(p)}</span></div>'
     st.html(f'<div class="ruler">{zones}{ms}{me}</div>'
             f'<div class="legend-z"><span style="--c:{t.TIER["Routine"]}">Routine &lt; {pct(threshold)}</span>'
             f'<span style="--c:{t.TIER["Check"]}">Check {pct(threshold)} to {pct(high)}</span>'
@@ -431,15 +447,23 @@ def sheet(rows: list[tuple[str, str]]) -> None:
     st.html('<dl class="sheet">' + "".join(f"<div><dt>{html.escape(k)}</dt><dd>{html.escape(v)}</dd></div>" for k, v in rows) + "</dl>")
 
 
-def lane_head(tier: str, count: int, strokes: int | None) -> None:
-    st.html(f'<div class="lane-h" style="--c:{t.TIER[tier]}"><b>{icon(t.TIER_ICON[tier])} {tier}</b><span>{count:,}</span></div>'
-            f'<p class="lane-n">{html.escape(t.TIER_TEXT[tier])}'
-            + (f" Held-out outcome: {strokes} had a stroke." if strokes is not None else "") + "</p>")
-
-
-def patient_card(title: str, p: float, tier: str, summary: str) -> str:
-    return (f'<div class="pcard" style="--c:{t.TIER[tier]}"><p class="pcard-t">{html.escape(title)}</p><p class="pcard-r">{pct(p)}</p>'
-            f'<p class="pcard-s">{html.escape(summary)}</p></div>')
+def lane(tier: str, count: int, strokes: int | None, rows: list[dict], more: int) -> None:
+    """One triage lane as a single block: header, description, patient rows (same height), then the overflow line."""
+    outcome = f" Held-out outcome: <b>{strokes} had a stroke</b>." if strokes is not None else ""
+    out = []
+    for r in rows:
+        tags = (["<span class='tg out'>Had a stroke</span>"] if r.get("stroke") else []) + [
+            f'<span class="tg">{html.escape(x)}</span>' for x in r["tags"]]
+        if len(tags) > 2:
+            tags = tags[:2] + [f'<span class="tg none">+{len(tags) - 2}</span>']
+        chips = "".join(tags) or '<span class="tg none">no listed risk factor</span>'
+        out.append(f'<div class="prow"><p class="prow-id">#{r["id"]}<span>{html.escape(r["who"])}</span></p>'
+                   f'<p class="prow-r">{pct(r["p"])}</p><div class="prow-tags">{chips}</div></div>')
+    body = f'<div class="prows">{"".join(out)}</div>' if out else ""
+    foot = f"+ {more:,} more in the full list below" if more else ("All shown" if out else "No patient in this lane")
+    st.html(f'<div class="lane" style="--c:{t.TIER[tier]}"><div class="lane-h"><b>{icon(t.TIER_ICON[tier])} {tier}</b>'
+            f'<span>{count:,}</span></div><p class="lane-n">{html.escape(t.TIER_TEXT[tier])}{outcome}</p>{body}'
+            f'<p class="lane-more">{foot}</p></div>')
 
 
 def freq_tree(n: int, strokes: int, found: int, alarms: int) -> None:

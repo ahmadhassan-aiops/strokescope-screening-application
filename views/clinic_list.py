@@ -62,22 +62,15 @@ def render() -> None:
     ui.stats(items)
 
     letter = iter("BCDE" if not held_out else "ABCD")
-    with ui.panel(next(letter), "Triage board", "highest risks first in each lane"):
+    with ui.panel(next(letter), "Triage board", "the six highest risks in each lane; for Routine, the patients nearest the screening line"):
         cols = st.columns(3, gap="small")
         for col, lane in zip(cols, LANES):
             with col:
                 d = df[df["tier"] == lane].sort_values("proba", ascending=False)
-                strokes = int(d["stroke"].sum()) if held_out else None
-                if held_out:
-                    ui.lane_head(lane, len(d), strokes)
-                else:
-                    st.html(f'<div class="lane-h" style="--c:var(--ink);--s:#fff"><b>{lane}</b><span>{len(d):,}</span></div>')
-                show = d.head(6) if lane != "Routine" else d.tail(3)
-                cards = "".join(ui.patient_card(f"#{int(r['patient_id'])}", r["proba"], lane, fmt.summary(r)) for _, r in show.iterrows())
-                st.html(cards or '<p style="color:var(--muted);font-size:.85rem">No patient in this lane.</p>')
-                if len(d) > len(show):
-                    st.html(f'<p class="lane-more">+ {len(d) - len(show):,} more in the full list'
-                            + (" (lowest risks shown)" if lane == "Routine" else "") + "</p>")
+                show = d.head(6)
+                ui.lane(lane, len(d), int(d["stroke"].sum()) if held_out else None,
+                        [{"id": int(r["patient_id"]), "who": fmt.who(r), "p": r["proba"], "tags": fmt.tags(r),
+                          "stroke": held_out and bool(r["stroke"])} for _, r in show.iterrows()], len(d) - len(show))
 
     if held_out:
         with ui.panel(next(letter), "What each lane holds", "held-out patients by real outcome"):

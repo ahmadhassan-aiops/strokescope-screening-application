@@ -43,3 +43,21 @@ def summary(row: pd.Series) -> str:
     if row["smoking_status"] == "smokes":
         bits.append("smokes")
     return " · ".join(bits)
+
+
+def tags(row: pd.Series) -> list[str]:
+    """Short tags for the findings that raise stroke risk."""
+    out = []
+    if row["hypertension"] == 1:
+        out.append("Hypertension")
+    if row["heart_disease"] == 1:
+        out.append("Heart disease")
+    if row["avg_glucose_level"] > 140:
+        out.append(f"Glucose {row['avg_glucose_level']:.0f}")
+    if row["smoking_status"] == "smokes":
+        out.append("Smokes")
+    return out
+
+
+def who(row: pd.Series) -> str:
+    return f"{row['gender']}, {age(float(row['age']))}"

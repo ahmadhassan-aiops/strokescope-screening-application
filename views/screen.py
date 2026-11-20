@@ -153,6 +153,9 @@ def render() -> None:
                 outcome = "had a stroke" if record["stroke"] == 1 else "had not had a stroke"
                 ui.caution(f"<b>Held-out outcome:</b> this patient {outcome}. The model never saw them in training.")
 
+    # Next to the long intake form the next step sits under the result; a record from the list is as short as the result,
+    # so there the next step runs full width below both
+    with right if record is None else st.container():
         with ui.panel("C", "Next step", NEXT[tier][0]):
             st.html(f'<div class="next">{ui.tier_badge(tier)}<p>{NEXT[tier][1]}</p></div>')
             ui.fast()
